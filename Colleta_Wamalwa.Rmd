@@ -1,0 +1,310 @@
+---
+title: "Understanding the Dynamics of Acute Malnutrition among Children Under 5 Years in Kenyan Counties"
+output: html_document
+date: "2023-07-20"
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+# Understanding Acute Malnutrition among children Under 5 years in Kenya
+## Statement of the Problem
+In Kenya, acute malnutrition among children under 5 years remains a critical public health concern. To address this issue effectively, it is essential to understand the dynamics of acute malnutrition prevalence across different counties and evaluate the impact of interventions, such as deworming programs, on mitigating malnutrition. Therefore, this research aims to investigate the relationship between the number of children dewormed and the prevalence of acute malnutrition among children under 5 years in Kenyan counties from January 2021 to June 2023. The findings will provide valuable insights to policymakers and organizations working to reduce malnutrition and improve Kenya's child health.
+
+## Research Questions
+In my analysis, I will attempt to answer the following questions:
+### Main Research Question
+Is there a relationship between the number of children dewormed and the prevalence of acute malnutrition in Kenyan Counties?
+### Other Reasearch Questions
+1.What is the correlation between the prevalence of acute malnutrition and other factors?
+2.Which counties have the highest and lowest numbers of acute malnutrition cases?
+3.Which mitigation measures can be put in place to help reduce acute malnutrition?
+
+## Objectives
+1.To analyze the relationship between the number of children dewormed and the prevalence of acute malnutrition to assess the effectiveness of deworming programs in mitigating malnutrition.
+
+2.To examine the correlation between the prevalence of acute malnutrition and other factors such as stunting, diarrhoea cases, and underweight children to identify potential interdependencies.
+
+3.To determine the counties with the highest and lowest prevalence of acute malnutrition and investigate any factors or potential correlations contributing to these differences.
+
+4.To conduct exploratory data analysis to understand the distribution of acute malnutrition cases and identify any temporal or spatial patterns.
+
+5.To provide actionable insights and recommendations for policymakers and organizations working to address malnutrition among children under 5 years in different counties of Kenya.
+
+## Defining metrics for success
+Being able to analyze the relationship between the number of children dewormed and prevalence of acute malnutrition and carrying out a comprehensive Exploratory Data Analysis
+
+## Understanding the variables
+**Period**-The time this data was taken
+**County**-represents the county 
+**Total Dewormed**-Total number of dewormed children in the county
+**Acute Malnutrition**-The number of children with  Acute Malnutrition
+**Stunted between 0 to 59 months**-Number of children with stunted growth between 0 to 59 months
+**Diarrhea** - Diarrhea cases reported
+**Underweight**-Underweight cases reported in children between 0 to 59 months 
+
+## 1. Loading Packages
+#### Installing tidyverse packages
+```{r}
+#install.packages("tidyverse")
+```
+
+#### Loading tidyverse
+```{r}
+library(tidyverse)
+```
+## 2. Data Importation 
+```{r}
+file_path <- "C:\\Users\\ADMIN\\Desktop\\CEMA\\data.csv"
+Data <- read.csv(file_path)
+```
+## 3. Data Understanding
+Size of the dataset
+```{r}
+dim(Data)
+```
+The data has 1410 rows and 11 columns(variables)
+```{r}
+
+
+# Install the required package (e.g., tidyverse)
+#install.packages("tidyverse")
+
+# Load the library
+library(tidyverse)
+```
+
+
+Previewing the first 10 rows
+```{r}
+head(Data,10)
+```
+Previewing the last 10 rows
+```{r}
+tail(Data,10)
+```
+Variable names and their datatypes
+```{r}
+glimpse(Data)
+```
+The variables are in characters,integers and doubles with most being integers.
+## 4. Performing Standardisation
+```{r}
+#changing the column names to lower case for uniformity
+names(Data) <- tolower(names(Data))
+names(Data)
+```
+All the variable names are in lowercase. There is uniformity in the naming.
+
+## 6. Finding and dealing with Duplicates
+```{r}
+Data[duplicated(Data), ]
+```
+There are no duplicates in our dataset
+
+## 7. Update the County name
+```{r}
+Data <- Data %>% mutate(county = str_replace(county, " County", ""))
+head(Data$county)
+```
+
+## 8. Missing data
+
+```{r}
+# Total missing values in each column
+colSums(is.na(Data))
+```
+A few columns contain null values. acute_malnutrition has 355, stunted.6 to 23.months has 11,
+stunted.0 to 6.months has 19,stunted.24 to 59.months has 14.
+
+```{r}
+#The acute_malnutrition variable has the highest number of null values,comparing to the total number of rows, we can not do away with null values, doing this might cause data inadequacy. We therefore replace null values with the mean.
+#Here,we get the mean of every column.
+
+# Identify numeric variables
+numeric_vars <- names(Data)[sapply(Data, is.numeric)]
+```
+We have successfully stored the variables with numeric values in the numeric_vars
+```{r}
+# Replace null (NA) values with their respective column mean in a new dataframe
+Data1 <- Data %>%
+  mutate(across(.cols = numeric_vars, ~ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+```
+Null values have been replaced with the mean of their respective variables
+```{r}
+#confirming if the change has been effected
+colSums(is.na(Data1))
+
+```
+The new dataframe no longer has null values. We adopt this new dataframe in our next steps
+
+## 9. Exploratory Data Analysis
+```{r}
+# Load the ggplot2 library
+library(ggplot2)
+library(dplyr)
+
+
+# Calculate the sum of malnutrition cases for each county
+sum_cases <- aggregate(Data1$acute.malnutrition, by=list(Category=Data1$county), FUN=sum)
+#arrange(desc(sum_cases))
+sum_cases
+
+#Visualizing on a bar plot
+bar_plot <- ggplot(sum_cases, aes(x = reorder(Category,x),y = x)) +
+  geom_bar(stat = "identity",fill="Blue") +
+ 
+  labs(title = "Total acute malnutrition cases by County",
+       x = "County",
+       y = "Total acute malnutrition") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+   coord_flip()
+bar_plot
+
+```
+
+From the graph, Wajir county has the highest number of malnutrition cases while Baringo recorded the lowest number.
+
+```{r}
+#Plotting a Scatter plot to visualize the relationship between total dewormed and acute malnutrition cases
+ggplot(Data1) +
+  geom_point(aes(acute.malnutrition, y=total.dewormed),color='black')
+        
+
+```
+
+From the Scatter plot, the higher the rate of deworming the lower the rate acute malnutrition cases.
+
+
+```{r}
+#finding the sum of total dewormed per county
+dewormed_county<-aggregate(Data1$total.dewormed, by=list(Category=Data1$county), FUN=sum)
+dewormed_county
+
+#Arranging the sum of total dewormed in descending order
+dewormed_county <- dewormed_county %>%
+  arrange(desc(x))
+dewormed_county
+
+#Visualizing on a bar plot
+plot <- ggplot(dewormed_county, aes(x = reorder(Category,x), y = x)) +
+  geom_bar(stat = "identity", fill = "Maroon") +
+  labs(title = "Total Dewormed by County",
+       x = "County",
+       y = "Total Dewormed") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+   coord_flip()
+
+plot
+
+```
+
+Nairobi County recorded the highest number of dewormed children while Lamu recorded the least.
+There was a low number of dewormed children in most counties.
+
+
+
+
+
+```{r}
+ggplot(Data1, aes(x = acute.malnutrition, y = diarrhoea.cases)) + 
+  geom_point() +
+  geom_smooth(color = "red") +
+  theme_bw()+
+  labs(title = "Relationship between Diarrhea and acute malnutrition",
+       x = "Acute Malnutrition",
+       y = "Diarrhea")
+
+names(Data1)
+```
+From the scatterplot,a decrease in malnutrition is associated with high diarrhoea.
+
+
+```{r}
+#Visualizing the correlation between variables
+#importing the necessary library
+library(ggcorrplot)
+#selecting only the numeric variables from the dataframe
+
+numeric_data <- Data1 %>% select_if(is.numeric)
+#calculating the correlation matrix
+correlation_matrix <- cor(numeric_data)
+
+# Visualize the correlation matrix
+ggcorrplot(correlation_matrix, type = "full", lab = TRUE)
+
+
+```
+There is a positive correlation between the variables.
+
+```{r}
+
+#importing the shapefile data
+library(leaflet)
+library(sf)
+counties <- st_read("C:\\Users\\ADMIN\\Desktop\\CEMA\\county.shp")
+#names(counties)
+
+```
+
+
+```{r}
+# sum of total.dewormed per county
+##names(Data1)
+count_total_dewormed <- Data1 %>% group_by(county) %>% 
+  summarise(county_total=sum(total.dewormed),
+            .groups = 'drop')
+
+count_total_dewormed
+
+``` 
+
+```{r}
+#creating a map of the Kenya counties shapefile
+ggplot()+
+  geom_sf(data=counties,mapping=aes(fill=Name))+
+  scale_fill_viridis_d()
+
+```
+Map of Kenya showing the counties polygons.
+
+```{r}
+merged_data <- merge(counties, count_total_dewormed, by.x = "Name", by.y = "county", all.x = TRUE)
+head(merged_data)
+
+mymap <- leaflet(data = merged_data) %>%
+  addTiles() %>%
+  addPolygons()
+
+mymap <- mymap %>%
+  addPopups(lng = ~st_coordinates(merged_data)[, 1], lat = ~st_coordinates(merged_data)[, -1],
+            popup = ~paste("County:", Name, "<br> Data:", county_total))
+
+#mymap <- mymap %>%
+#  addPolygons(fillColor = ~colorNumeric(palette = "Blues", domain = #merged_data$county_total)(county_total))
+
+
+# Display the map
+names(merged_data)
+mymap
+```
+An extract of Kenya boundaries and the counties.
+
+
+##Conclusion
+1. There is a positive correlation between the prevalence of acute malnutrition and other factors. An increase in dewormed cases was associated with a decrease in acute malnutrition cases.
+2. A decrease in acute malnutrition was associated with an increase in diarrhea cases.
+3. Wajir county has the highest number of acute malnutrition cases followed by Turkana county. On the other hand,Baringo, Nyeri and Homabay recorded the lowest number of malnutrition cases.
+
+
+##Recommendation
+There are actionable measures that can be put in place to curb the issue of acute malnutrition especially in the Northern part of Kenya. These mitigation measures require collaboration among government agencies, NGOs, communities, and other stakeholders to be able to effect sustainable measures. 
+1. Targeted Nutritional Programs: Implement targeted nutritional programs in in counties with high cases to address acute malnutrition. These programs could include providing food supplements, fortified foods, and micro nutrient supplements to vulnerable populations such as children under 5 years old.
+
+2. Increase Deworming Efforts: Intensify deworming campaigns in counties with lower dewormed cases. Partner with healthcare facilities, schools, and community health workers to reach more children and provide deworming treatments regularly.
+
+3. Conduct health education and awareness campaigns in all counties to educate caregivers and parents about the importance of proper nutrition, deworming, and early detection of malnutrition. Focus on promoting breastfeeding, balanced diets, and proper sanitation practices.
+
+
